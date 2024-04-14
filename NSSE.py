@@ -2,16 +2,16 @@ import numpy as np
 import math
 
 # ハイパーパラメータ
-WPOP_SIZE = 400
-PPOP_SIZE = 400
-MAX_GENERATION = 400
-WCROSSOVER_PROB = 0.3
+WPOP_SIZE = 200
+PPOP_SIZE = 200
+MAX_GENERATION = 3000
+WCROSSOVER_PROB = 0.5
 PCROSSOVER_PROB = 0.5
 WMUTATE_PROB = 0.01
 PMUTATE_PROB = 0.15
 WCHROM_LEN = 100
 PCHROM_LEN = 20
-TOURNAMENT_SIZE = 15
+TOURNAMENT_SIZE = 5
 
 # 部分解個体
 class PartialIndividual:
@@ -152,14 +152,14 @@ def crowding_distance(tmp_rank):
         wpop.population[tmp_rank[0]].cd = 10000
         wpop.population[len(tmp_rank) - 1].cd = 10000
         for i in range(1, len(tmp_rank) - 1):
-            if(wpop.population[len(tmp_rank) - 1].fitness1 - wpop.population[0].fitness1 != 0):
+            if(wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness1 - wpop.population[tmp_rank[0]].fitness1 != 0):
                 wpop.population[tmp_rank[i]].cd += (wpop.population[tmp_rank[i+1]].fitness1 - wpop.population[tmp_rank[i-1]].fitness1) / (wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness1 - wpop.population[tmp_rank[0]].fitness1)
 
         tmp_rank = sorted(tmp_rank, key=lambda tmp_rank: wpop.population[tmp_rank].fitness2)
         wpop.population[tmp_rank[0]].cd = 10000
         wpop.population[len(tmp_rank) - 1].cd = 10000
         for i in range(1, len(tmp_rank) - 1):
-            if(wpop.population[len(tmp_rank) - 1].fitness2 - wpop.population[0].fitness2 != 0):
+            if(wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness2 - wpop.population[tmp_rank[0]].fitness2 != 0):
                 wpop.population[tmp_rank[i]].cd += (wpop.population[tmp_rank[i+1]].fitness2 - wpop.population[tmp_rank[i-1]].fitness2) / (wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness2 - wpop.population[tmp_rank[0]].fitness2)
 
 # 評価関数
