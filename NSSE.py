@@ -2,15 +2,16 @@ import numpy as np
 import math
 
 # ハイパーパラメータ
-WPOP_SIZE = 200
-PPOP_SIZE = 200
-MAX_GENERATION = 400
-WCROSSOVER_PROB = 0.5
+WPOP_SIZE = 400
+PPOP_SIZE = 400
+MAX_GENERATION = 1000
+WCROSSOVER_PROB = 0.4
 PCROSSOVER_PROB = 0.5
 WMUTATE_PROB = 0.01
-PMUTATE_PROB = 0.1
+PMUTATE_PROB = 0.15
 WCHROM_LEN = 100
 PCHROM_LEN = 20
+TOURNAMENT_SIZE = 15
 
 # 部分解個体
 class PartialIndividual:
@@ -47,8 +48,8 @@ class PartialPopulation:
     def crossover(self):
         for i in range(int(PPOP_SIZE * (1 - PCROSSOVER_PROB)), PPOP_SIZE):
             # 二点交叉
-            parent1 = np.random.randint(0, int(PPOP_SIZE/4))
-            parent2 = np.random.randint(0, int(PPOP_SIZE/4))
+            parent1 = min(np.random.choice(range(PPOP_SIZE), TOURNAMENT_SIZE), key=lambda x: self.population[x].global_fitness)
+            parent2 = min(np.random.choice(range(PPOP_SIZE), TOURNAMENT_SIZE), key=lambda x: self.population[x].global_fitness)
             index1 = np.random.randint(0, PCHROM_LEN)
             index2 = np.random.randint(0, PCHROM_LEN)
             self.population[i].crossover(self.population[parent1], self.population[parent2], index1, index2)
@@ -101,14 +102,14 @@ class WholePopulation:
     def crossover(self):
         for i in range(int(WPOP_SIZE * (1 - WCROSSOVER_PROB)), WPOP_SIZE):
             # 二点交叉
-            parent1 = np.random.randint(0, int(WPOP_SIZE/4))
-            parent2 = np.random.randint(0, int(WPOP_SIZE/4))
+            parent1 = min(np.random.choice(range(WPOP_SIZE), TOURNAMENT_SIZE), key=lambda x: self.population[x].global_fitness)
+            parent2 = min(np.random.choice(range(WPOP_SIZE), TOURNAMENT_SIZE), key=lambda x: self.population[x].global_fitness)
             index1 = np.random.randint(0, WCHROM_LEN)
             index2 = np.random.randint(0, WCHROM_LEN)
             self.population[i].crossover(self.population[parent1], self.population[parent2], index1, index2)
 
     def evainit(self):
-        for i in range(WPOP_SIZE):
+        for i in range(int(WPOP_SIZE * (1 - WCROSSOVER_PROB)), WPOP_SIZE):
             self.population[i].global_fitness = 1000000
             self.population[i].rankfit = 1000000
             self.population[i].cd = 0
@@ -116,7 +117,7 @@ class WholePopulation:
             self.population[i].fitness2 = 1000000
 
 def evaluate_object():
-    for j in range(WPOP_SIZE):
+    for j in range(int(WPOP_SIZE * (1 - WCROSSOVER_PROB)), WPOP_SIZE):
         def gray_to_decimal(gray):
             binary_code = [0] * 20
             binary_code[0] = gray.chrom[0]
