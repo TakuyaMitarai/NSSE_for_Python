@@ -2,22 +2,22 @@ import numpy as np
 import math
 
 # ハイパーパラメータ
-WPOP_SIZE = 200
-PPOP_SIZE = 200
-MAX_GENERATION = 3000
-WCROSSOVER_PROB = 0.5
-PCROSSOVER_PROB = 0.5
-WMUTATE_PROB = 0.01
-PMUTATE_PROB = 0.15
-WCHROM_LEN = 100
-PCHROM_LEN = 20
-TOURNAMENT_SIZE = 5
+WPOP_SIZE = 400         # 全体解集団のサイズ
+PPOP_SIZE = 400         # 部分解集団のサイズ
+MAX_GENERATION = 250    # 世代交代数
+WCROSSOVER_PROB = 0.5   # 全体解集団の交叉率
+PCROSSOVER_PROB = 0.5   # 部分解集団の交叉率
+WMUTATE_PROB = 0.05     # 全体解遺伝子の突然変異確率
+PMUTATE_PROB = 0.2      # 部分解遺伝子の突然変異確率
+WCHROM_LEN = 100        # 全体解個体のサイズ
+PCHROM_LEN = 20         # 部分解集団のサイズ
+TOURNAMENT_SIZE = 20    # トーナメントサイズ
 
 # 部分解個体
 class PartialIndividual:
     def __init__(self):
         self.chrom = np.random.randint(0, 2, PCHROM_LEN)
-        self.global_fitness = 1000000
+        self.global_fitness = float('inf')
 
     def crossover(self, parent1, parent2, index1, index2):
         if index1 > index2:
@@ -56,21 +56,22 @@ class PartialPopulation:
 
     def evainit(self):
         for i in range(PPOP_SIZE):
-            self.population[i].global_fitness = 1000000
+            self.population[i].global_fitness = float('inf')
 
 
 # 全体解個体
 class WholeIndividual:
-    def __init__(self):
+    def __init__(self, ppop):
         self.chrom = []
+        self.ppop = ppop
         for _ in range(WCHROM_LEN):
             index = np.random.randint(0, PPOP_SIZE)
-            self.chrom.append(ppop.population[index])
-        self.global_fitness = 1000000
-        self.rankfit = 1000000
+            self.chrom.append(self.ppop.population[index])
+        self.global_fitness = float('inf')
+        self.rankfit = float('inf')
         self.cd = 0
-        self.fitness1 = 1000000
-        self.fitness2 = 1000000
+        self.fitness1 = float('inf')
+        self.fitness2 = float('inf')
     
     def crossover(self, parent1, parent2, index1, index2):
         if index1 > index2:
@@ -89,14 +90,14 @@ class WholeIndividual:
         for i in range(WCHROM_LEN):
             if np.random.rand() < WMUTATE_PROB:
                 index = np.random.randint(0, PPOP_SIZE)
-                self.chrom[i] = ppop.population[index]
+                self.chrom[i] = self.ppop.population[index]
 
 # 全体解集団
 class WholePopulation:
-    def __init__(self):
+    def __init__(self, ppop):
         self.population = []
         for i in range(WPOP_SIZE):
-            individual = WholeIndividual()
+            individual = WholeIndividual(ppop)
             self.population.append(individual)
     
     def crossover(self):
@@ -110,11 +111,12 @@ class WholePopulation:
 
     def evainit(self):
         for i in range(int(WPOP_SIZE * (1 - WCROSSOVER_PROB)), WPOP_SIZE):
-            self.population[i].global_fitness = 1000000
-            self.population[i].fitness1 = 1000000
-            self.population[i].fitness2 = 1000000
+            self.population[i].global_fitness = float('inf')
+            self.population[i].fitness1 = float('inf')
+            self.population[i].fitness2 = float('inf')
 
-def evaluate_object():
+# 各目的関数値の算出
+def evaluate_object(wpop):
     for j in range(0, WPOP_SIZE):
         def gray_to_decimal(gray):
             binary_code = [0] * 20
@@ -142,35 +144,35 @@ def evaluate_object():
             
             wpop.population[j].fitness2 += math.pow(abs(real_value), 0.8) + 5 * math.sin(real_value ** 3)
 
-
-def crowding_distance(tmp_rank):
+# 混雑距離
+def crowding_distance(tmp_rank, wpop):
     for i in range(len(tmp_rank)):
         wpop.population[tmp_rank[i]].cd = 0
 
     if(len(tmp_rank) >= 2):
         tmp_rank = sorted(tmp_rank, key=lambda tmp_rank: wpop.population[tmp_rank].fitness1)
-        wpop.population[tmp_rank[0]].cd = 10000
-        wpop.population[len(tmp_rank) - 1].cd = 10000
+        wpop.population[tmp_rank[0]].cd = float('inf')
+        wpop.population[len(tmp_rank) - 1].cd = float('inf')
         for i in range(1, len(tmp_rank) - 1):
             if(wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness1 - wpop.population[tmp_rank[0]].fitness1 != 0):
                 wpop.population[tmp_rank[i]].cd += (wpop.population[tmp_rank[i+1]].fitness1 - wpop.population[tmp_rank[i-1]].fitness1) / (wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness1 - wpop.population[tmp_rank[0]].fitness1)
 
         tmp_rank = sorted(tmp_rank, key=lambda tmp_rank: wpop.population[tmp_rank].fitness2)
-        wpop.population[tmp_rank[0]].cd = 10000
-        wpop.population[len(tmp_rank) - 1].cd = 10000
+        wpop.population[tmp_rank[0]].cd = float('inf')
+        wpop.population[len(tmp_rank) - 1].cd = float('inf')
         for i in range(1, len(tmp_rank) - 1):
             if(wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness2 - wpop.population[tmp_rank[0]].fitness2 != 0):
                 wpop.population[tmp_rank[i]].cd += (wpop.population[tmp_rank[i+1]].fitness2 - wpop.population[tmp_rank[i-1]].fitness2) / (wpop.population[tmp_rank[len(tmp_rank) - 1]].fitness2 - wpop.population[tmp_rank[0]].fitness2)
 
 # 評価関数
-def evaluate_fitness():
+def evaluate_fitness(wpop, ppop):
     eva_ind_cnt = 0
     rank = 1
     next_remain = []
     for i in range(WPOP_SIZE):
         next_remain.append(i)
     
-    evaluate_object()
+    evaluate_object(wpop)
     
     while(eva_ind_cnt < WPOP_SIZE):
         tmp_eva_ind_cnt = eva_ind_cnt
@@ -192,7 +194,7 @@ def evaluate_fitness():
                 tmp_rank.append(current_remain[i])
                 eva_ind_cnt += 1
 
-        crowding_distance(tmp_rank)
+        crowding_distance(tmp_rank, wpop)
         rank += 1
 
     for i in range(WPOP_SIZE):
@@ -202,29 +204,3 @@ def evaluate_fitness():
                 wpop.population[i].chrom[j].global_fitness = wpop.population[i].global_fitness
     wpop.population.sort(key=lambda individual: individual.global_fitness)
     ppop.population.sort(key=lambda individual: individual.global_fitness)
-
-
-# 初期化
-ppop = PartialPopulation()
-wpop = WholePopulation()
-evaluate_fitness()
-
-best = []
-# 世代交代
-for i in range(MAX_GENERATION):
-    print(f"第{i+1}世代")
-    best.append(wpop.population[0].global_fitness)
-    # 交叉
-    ppop.crossover()
-    wpop.crossover()
-
-    # 適応度初期化
-    ppop.evainit()
-    wpop.evainit()
-
-    # 適応度算出
-    evaluate_fitness()
-
-for i in range(int(WPOP_SIZE / 2)):
-    print(f"{wpop.population[i].fitness1}, {wpop.population[i].fitness2}")
-    # print(f"{wpop.population[i].cd}")
