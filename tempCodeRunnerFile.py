@@ -1,1 +1,0 @@
-itness1}, {wpop.population[i].fitness2}")
